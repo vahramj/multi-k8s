@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: postgres
+  template:
+    metadata:
+      labels:
+        component: postgres
+    spec:
+      volumes:
+        # this will make k8s allocate the actual persistent volume according to the specified claim
+          # i.t.c. 2GB in ReadWriteOnce access mode.
+        # This volume will be used by containers instances defined below.
+        - name: postgres-storage
+          persistentVolumeClaim:
+            # this has to match metadata.name of a PersistentVolumeClaim object
+            claimName: database-persistent-volume-claim
+      containers:
+        - name: postgres
+          image: postgres
+          ports:
+            - containerPort: 5432
+          volumeMounts: 
+            - name: postgres-storage
+              # whatever we store in this directory will end up on the postgres-storage volume
+              # since postgresql saves it's data onto var/lib/postgresql/data by default, 
+                # we want that to be synced with the postgres-storage volume
+              mountPath: var/lib/postgresql/data
+              # this will create a folder in postgres-storage volume, and will sync everything
+                # in mountPath into the folder. 
+              # This is needed for how postgress is working.
+              subPath: postgres
+          env:
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgpassword
+                  key: PGPASSWORD
+        

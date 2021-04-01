@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-cluster-ip-service
+spec:
+  type: ClusterIP
+  selector:
+    component: web
+  ports:
+      # similar to NodePort's ports, but nodePort doesn't exist, 
+        # since the object cannot be accessed from outside.
+      # port and target can have different values of course, but no point for it here.
+    - port: 3000
+      targetPort: 3000

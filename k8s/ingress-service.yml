@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1beta1
+# [how come this is not Service and the type Ingress?]
+kind: Ingress
+metadata:
+  name: ingress-service
+  # additional configs for higher level options arounds ingress obj
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # enable expressions[?]
+    nginx.ingress.kubernetes.io/use-regex: 'true'
+    # The server itself shouldn't be aware of /api logic, so the line below
+      # converts /api to / before routing it to the server
+      # this is similar to what we've done in nginx configs for complexApp project. 
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+    - http:
+        # tells ingress where to forward the incoming traffic
+        paths:
+          - path: /?(.*)
+            backend:
+              # name is defined in some Service/ClusterIP config's metadata.name
+              serviceName: client-cluster-ip-service
+              # name is defined in the same Service/ClusterIP config's spec.ports[*].port
+              servicePort: 3000
+          - path: /api/?(.*)
+            backend:
+              serviceName: server-cluster-ip-service
+              servicePort: 5000

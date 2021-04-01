@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      component: server
+  template:
+    metadata:
+      labels:
+        component: server
+    spec:
+      containers:
+        - name: server
+          # image: cygnetops/multi-server-pgfix-5-11
+          # image: stephengrider/multi-server
+          image: vahramj/multi-server
+          ports:
+            # this 5000 comes from server/index.js
+            - containerPort: 5000
+          env:
+            - name: REDIS_HOST
+              value: redis-cluster-ip-service
+            - name: REDIS_PORT
+              # env var values have to be strings. The number 6379 here would have failed.
+              value: '6379'
+            - name: PGUSER
+              # postgres is the default user name.
+              # should be set to a custom value, but ok for this tutorial
+              value: postgres
+            - name: PGHOST
+              value: postgres-cluster-ip-service
+            - name: PGPORT
+              value: '5432'
+            - name: PGDATABASE
+              # this too is the default postgres  db
+              value: postgres
+              # multi-server image will be looking for PGPASSORD env var
+              # because we told it to in server/keys.js file by doing pgPassword: process.env.PGPASSWORD
+            - name: PGPASSWORD
+              # says grab the key value at the key PGPASSWORD on the secret object named pgpassword
+              # we defined PGPASSWORD & pgpassword when we run the "kubectl create secret ..." command
+              # there could be multiple key/value pairs on the same secret.
+              valueFrom:
+                secretKeyRef:
+                  name: pgpassword
+                  # This has the same value as the name, but it's totally coincidental.
+                  key: PGPASSWORD
