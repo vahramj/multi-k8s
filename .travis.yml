@@ -1,0 +1,17 @@
+# sudo: required
+services:
+  - docker
+before_install:
+    # this will decrypt the encrypted service-account.json file.
+  - openssl aes-256-cbc -K $encrypted_9f3b5599b056_key -iv $encrypted_9f3b5599b056_iv -in service-account.json.enc -out service-account.json -d
+    # the two lines below are setting up google cloud sdk on the local machine
+      # i.t.c. travis' machine.
+  - curl https://sdk.cloud.google.com | bash > /dev/null;
+  - source $HOME/google-cloud-sdk/path.bash.inc
+    # google cloud cli installs/updates kubectl on the local machine
+  - gcloud components update kubectl
+    # activate-service-account ~ aws IAM => we set the configs using service-account.json
+      # i.e. service-account will give travis a programmatic access to out google cloud account
+      # don't commit the .json file or allow anyone to gain access to it.
+      # It has passwords and stuff.
+  - gcloud auth activate-service-account --key-file service-account.json
