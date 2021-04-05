@@ -9,7 +9,7 @@ function App() {
 	return (
 		<BrowserRouter>
 			<div className="App">
-				<h1 className="title">Fib Calculator version 2</h1>
+				<h1 className="title">Fib Calculator version Kubernetes!!</h1>
 				<header className="App-header">
 					<Link to="/">Home</Link>
 					<Link to="/otherpages">OtherPages</Link>
