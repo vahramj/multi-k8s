@@ -1,8 +1,17 @@
 # sudo: required
 services:
   - docker
+env:
+  global:
+      # grabs the git head sha and saves it as a variable $SHA on the current bash instance.
+    - SHA=$(git rev-parse HEAD)
+      # will configure google cli to not display any prompts requiring user input
+        # i.e. if any of the gcloud commands below require user input, 
+        # we can't respond because travis is running them programmaticaly.
+    - CLOUDSDK_CORE_DISABLE_PROMPTS=1
 before_install:
-    # this will decrypt the encrypted service-account.json file.
+    # this will grab the encrypted service-account.json file from the git repo, 
+      # then will decrypt it so "gcloud auth" step below will have the file.
   - openssl aes-256-cbc -K $encrypted_9f3b5599b056_key -iv $encrypted_9f3b5599b056_iv -in service-account.json.enc -out service-account.json -d
     # the two lines below are setting up google cloud sdk on the local machine
       # i.t.c. travis' machine.
@@ -15,3 +24,21 @@ before_install:
       # don't commit the .json file or allow anyone to gain access to it.
       # It has passwords and stuff.
   - gcloud auth activate-service-account --key-file service-account.json
+  - gcloud config set project multi-k8s-309423
+  - gcloud config set compute/zone us-west1-a
+    # tells google cluster that "multi-cluster" is the cluster kubectl works with.
+      # [why set project is not enough for it?]
+  - gcloud container clusters get-credentials multi-cluster
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -t vahramj/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run -e CI=true vahramj/react-test npm test
+
+deploy:
+  # unlike elasticbeanstalk, travis doesn't know how to deploy k8s cluster on google cloud
+    # so we need to provide it with a script.
+  provider: script
+  script: bash ./deploy.sh
+  on:
+    branch: master
